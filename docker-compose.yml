@@ -1,0 +1,41 @@
+services:
+  frontend:
+    build: ./frontend
+    ports:
+      - "1234:80" # The host port 1234 is mapped to port 80 on the container
+    depends_on:
+      - backend # The backend is started before the frontend
+
+  backend:
+    build: ./backend
+    ports:
+      - "5001:5000"
+    depends_on:
+      - database # The database is started before the backend
+    environment:
+      # Connection string to database defined below
+      - DbConnectionString=Host=database;Port=5432;Database=booksdb;Username=postgres;Password=postgres
+      - BackendPort=5000
+
+  database:
+    image: postgres:latest # PostgreSQL is automatically downloaded
+    restart: always
+    environment:
+      POSTGRES_DB: booksdb
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      # Default PostgreSQL Docker image data directory
+      - db_data:/var/lib/postgresql/data
+      
+      # Any .sql file in the "docker-entrypoint-initdb.d" directory
+      # is automatically executed during the container's initialization phase.
+      # The .database/init.sql file is thus executed when initializing.
+      - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql
+
+volumes:
+  # Named volumes are managed by Docker but are stored outside of the container's filesystem.
+  # This enables data persistence for when the container is stopped, removed, or recreated.
+  db_data:
